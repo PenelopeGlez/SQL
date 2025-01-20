@@ -63,10 +63,12 @@ The following SQL was written to answer specific questions about the content:
 --When was the most recent batch of tv shows and/or movies added to the database?
 SELECT MAX(date(date_added))
 FROM "netflix_titles_info";
+
 --List all the movies and tv shows in alphabetical order.
 SELECT title
 FROM "netflix_titles_info"
 ORDER BY title asc;
+
 --Who was the Director for the movie The Starling?
 SELECT info.title,
 people.director
@@ -74,6 +76,7 @@ FROM "netflix_titles_info" as info
 LEFT JOIN "netflix_people" as people 
 ON info.show_id=people.show_id
 WHERE info.title='The Starling';
+
 --What is the oldest movie in the database and what year was it made?
 SELECT title, release_year
 FROM "netflix_titles_info"
@@ -82,4 +85,33 @@ AND release_year <=
 (SELECT MIN(release_year)
 FROM "netflix_titles_info"
 WHERE type = 'Movie');
+
+--What is the average duration of movies on Netflix? 
+SELECT AVG(CAST(SUBSTR(duration, 1, LENGTH(duration) - 4) AS INTEGER)) AS avg_duration
+FROM "netflix_titles_info"
+WHERE type = 'Movie';
+
+--Which Netflix original titles are the most highly rated in specific genres?
+SELECT info.title, info.listed_in, info.rating
+FROM netflix_titles_info AS info
+INNER JOIN (
+    SELECT listed_in, MAX(rating) AS max_rating
+    FROM netflix_titles_info
+    WHERE rating IS NOT NULL
+    GROUP BY listed_in
+) AS genre_ratings
+ON info.listed_in = genre_ratings.listed_in AND info.rating = genre_ratings.max_rating
+ORDER BY genre_ratings.max_rating DESC;
+
+--What is the trend of Netflix content release by genre over time? 
+SELECT release_year, listed_in, COUNT(show_id) AS genre_count
+FROM netflix_titles_info
+WHERE listed_in IN (
+    SELECT DISTINCT listed_in
+    FROM netflix_titles_info
+)
+GROUP BY release_year, listed_in
+ORDER BY release_year ASC, genre_count DESC;
+
+
 
